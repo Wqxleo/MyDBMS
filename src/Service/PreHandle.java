@@ -6,6 +6,7 @@ import Common.Error;
 import Common.Prompt;
 import Common.Util;
 import Service.Create;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -18,7 +19,7 @@ public class PreHandle {
     private static String sql;
     private static String[] arr;
     //对输入的sql语句预处理
-    public static void preHandleSql(String preSql) {
+    public static void preHandleSql(String preSql) throws JSONException {
         //正则 +号匹配前面的换行符一次或多次
         sql = preSql.replaceAll("[\\n\\r\\t]+", " ").trim().toLowerCase().replaceAll(" +", " ");
         //以空格符分割成字符串数组
@@ -34,6 +35,7 @@ public class PreHandle {
                 //已经登录，执行其他操作
                 switch(arr[0]) {
                     case "exit" : //退出
+                        //重置
                         handleExit();
                         break;
                     case "create" :  //创建
@@ -76,7 +78,7 @@ public class PreHandle {
         }
     }
     //处理登录请求
-    public static void handleLogin() {
+    public static void handleLogin() throws JSONException {
         //检查语法是否正确
         if(arr.length != 3) {
             Util.showInTextArea(sql, Error.COMMAND_ERROR);
@@ -88,7 +90,7 @@ public class PreHandle {
             return;
         }
         //检查密码是否正确
-        net.sf.json.JSONObject user = Constant.USERS.getJSONObject(arr[1]);
+        JSONObject user = Constant.USERS.getJSONObject(arr[1]);
         if(!user.get("password").equals(arr[2])) {
             Util.showInTextArea(sql, Error.PASSWORD_WRONG);
             return;

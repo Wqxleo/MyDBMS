@@ -152,14 +152,14 @@ public class Util {
      */
     public static String[] getNaturesArray(String table, boolean isview) {
         try {
-            net.sf.json.JSONArray arr = null;
+            JSONArray arr = null;
             if (isview) {
                 arr = Constant.currentDatabase.getJSONObject("view").getJSONObject(table).getJSONArray("items");
             } else {
                 arr = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
             }
-            String[] result = new String[arr.size()];
-            for (int i = 0; i < arr.size(); i++) {
+            String[] result = new String[arr.length()];
+            for (int i = 0; i < arr.length(); i++) {
                 result[i] = arr.getJSONObject(i).getString("nature");
             }
             return result;
@@ -177,13 +177,13 @@ public class Util {
     public static String getNaturesString(String table, boolean isview) {
         try {
             String str = "";
-            net.sf.json.JSONArray arr;
+            JSONArray arr;
             if (isview) {
                 arr = Constant.currentDatabase.getJSONObject("view").getJSONObject(table).getJSONArray("items");
             } else {
                 arr = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
             }
-            for (int i = 0; i < arr.size(); i++) {
+            for (int i = 0; i < arr.length(); i++) {
                 str += arr.getJSONObject(i).getString("nature") + "\t\t";
             }
             return str;
@@ -200,10 +200,10 @@ public class Util {
      * @param isview
      * @return
      */
-    public static String getNatureType(String table, String nature, boolean isview) {
+    public static String getNatureType(String table, String nature, boolean isview) throws JSONException {
         int pos = getNaturePosition(table, nature, isview);
         if (pos != -1) {
-            net.sf.json.JSONArray arr;
+            JSONArray arr;
             if (isview)
                 arr = Constant.currentDatabase.getJSONObject("view").getJSONObject(table).getJSONArray("items");
             else
@@ -281,13 +281,13 @@ public class Util {
     public static List<String> getNaturesList(String table, boolean isview) {
         try {
             List<String> list = new LinkedList<String>();
-            net.sf.json.JSONArray arr;
+            JSONArray arr;
             if (isview) {
                 arr = Constant.currentDatabase.getJSONObject("view").getJSONObject(table).getJSONArray("items");
             } else {
                 arr = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
             }
-            for (int i = 0; i < arr.size(); i++) {
+            for (int i = 0; i < arr.length(); i++) {
                 list.add(arr.getJSONObject(i).getString("nature"));
             }
             return list;
@@ -304,16 +304,16 @@ public class Util {
      * @param isview
      * @return
      */
-    public static boolean checkPrimaryKeyLimit(String table, String[] value, boolean isview) {
+    public static boolean checkPrimaryKeyLimit(String table, String[] value, boolean isview) throws JSONException {
         //insert into t1 values(1,'hh',2) | value[]中为 插入的数据 如 1 'hh' 2
         boolean primaryKeyLimit = true; //是否符合主键约束
         boolean hasPrimaryKey = false;
         List<String> primaryKeyValueInTableData = new LinkedList<String> ();
         //获取数据字典中的字段的约束，赋值给primaryKeyValidity
-        net.sf.json.JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
+        JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
         List<String> limitArr = new LinkedList<String>();
-        for(int i=0; i<items.size(); i++) {
-            net.sf.json.JSONObject temp = items.getJSONObject(i);
+        for(int i=0; i<items.length(); i++) {
+            JSONObject temp = items.getJSONObject(i);
             //System.out.println("JSON对象" + temp.toString());
             if(temp.has("limit")) {
                 String tempLimit = temp.getString("limit");
@@ -377,10 +377,10 @@ public class Util {
         //List<String> notNullValueInTableData = new LinkedList<String> (); //存放的是not null那一列数据本身，不是存放定义
         try {
             //获取数据词典中的字段的约束，赋值给notNullValueInTableData
-            net.sf.json.JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
+            JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
             List<String> limitArr = new LinkedList<String>();
-            for(int i=0; i<items.size(); i++) {
-                net.sf.json.JSONObject temp = items.getJSONObject(i);
+            for(int i=0; i<items.length(); i++) {
+                JSONObject temp = items.getJSONObject(i);
                 if(temp.has("limit")) {
                     String tempLimit = temp.getString("limit");
                     limitArr.add(tempLimit);
@@ -429,16 +429,16 @@ public class Util {
      * @param isview
      * @return
      */
-    public static boolean checkUniqueLimit(String table, String[] value, boolean isview) {
+    public static boolean checkUniqueLimit(String table, String[] value, boolean isview) throws JSONException {
         //insert into t1 values(1,'hh',2) | natures[]为数据字典中列名 | value[]中为 插入的数据 如 1 'hh' 2
         boolean uniqueLimit = true; //是否符合唯一约束
         boolean hasUniqueLimit = false;
         List<String> uniqueValueInTableData = new LinkedList<String> ();
         //获取数据字典中的字段的约束，赋值给uniqueValueInTableData
-        net.sf.json.JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
+        JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(table).getJSONArray("items");
         List<String> limitArr = new LinkedList<String>();
-        for(int i=0; i<items.size(); i++) {
-            net.sf.json.JSONObject temp = items.getJSONObject(i);
+        for(int i=0; i<items.length(); i++) {
+            JSONObject temp = items.getJSONObject(i);
             //System.out.println("JSON对象" + temp.toString());
             if(temp.has("limit")) {
                 String tempLimit = temp.getString("limit");
@@ -505,7 +505,7 @@ public class Util {
      * @param table
      * @param len
      */
-    public static void updateTableSize(String table, int len) {
+    public static void updateTableSize(String table, int len) throws JSONException {
         Constant.currentDatabase.getJSONObject("table").getJSONObject(table).put("size", len);
         Util.writeData(Constant.PATH_DICTIONARY, Constant.DICTIONARY.toString());
     }

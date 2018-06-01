@@ -1,6 +1,6 @@
 package Common;
 
-import net.sf.json.JSONObject;
+import org.json.JSONObject;
 
 /**
  * Created by wangquanxiu at 2018/5/27 21:38
@@ -8,14 +8,14 @@ import net.sf.json.JSONObject;
 public class Constant {
 
     //路径
-    public static final String PATH_ROOT = "C:/DBMS/";
+    public static final String PATH_ROOT = "G:/MYDBMS/";
     public static final String PATH_CONFIG = PATH_ROOT + "./config/";
     public static final String PATH_USERS = PATH_CONFIG + "./users.sql"; //用户文件目录
     public static final String PATH_DICTIONARY = PATH_CONFIG + "./dictionary.sql";  //数据字典目录
 
     //数据字典
-    public static JSONObject USERS = null; //用户字典
-    public static JSONObject DICTIONARY = null; //数据字典
+    public static org.json.JSONObject USERS = null; //用户字典
+    public static org.json.JSONObject DICTIONARY = null; //数据字典
 
     //当前
     public static JSONObject currentUser = null; //当前登录用户

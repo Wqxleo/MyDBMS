@@ -1,6 +1,7 @@
 package UI;
 
 import Service.PreHandle;
+import org.json.JSONException;
 
 import javax.swing.*;
 
@@ -21,6 +22,7 @@ public class MainFrame extends JFrame{
     public static JTextArea output;  //输出框
 
     public MainFrame(){
+        init();
 
     }
 
@@ -78,7 +80,11 @@ public class MainFrame extends JFrame{
                 String sql = input.getText();
                 if(!sql.equals("mysql>")){
                     //交给PreHandle处理，字符串去掉提示语句
-                    PreHandle.preHandleSql(sql.substring(6));
+                    try {
+                        PreHandle.preHandleSql(sql.substring(6));
+                    } catch (JSONException e1) {
+                        e1.printStackTrace();
+                    }
                     //重置输入框
                     input.setText("mysql>");
                 }
