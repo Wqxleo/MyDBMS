@@ -15,7 +15,7 @@ import org.json.JSONObject;
 public class PreHandle {
 
 
-    private static boolean isLogin = false;
+    public static boolean isLogin = false;
     private static String sql;
     private static String[] arr;
     //对输入的sql语句预处理
@@ -28,7 +28,7 @@ public class PreHandle {
             if(isLogin) {
                 Util.showInTextArea(sql, Error.LOGIN_AGANIN);
             } else {
-                handleLogin();
+                Login.handleLogin(arr);
             }
         } else {
             if(isLogin) {
@@ -36,7 +36,7 @@ public class PreHandle {
                 switch(arr[0]) {
                     case "exit" : //退出
                         //重置
-                        handleExit();
+                        Exit.handleExit(arr);
                         break;
                     case "create" :  //创建
                         Create.handleSql(arr);
@@ -77,7 +77,7 @@ public class PreHandle {
             }
         }
     }
-    //处理登录请求
+  /*  //处理登录请求
     public static void handleLogin() throws JSONException {
         //检查语法是否正确
         if(arr.length != 3) {
@@ -115,6 +115,6 @@ public class PreHandle {
         Constant.currentUserName = null;
         Constant.currentDatabaseName = null;
         Util.showInTextArea(sql, Prompt.EXIT_SYSTEM);
-    }
+    }*/
 
 }
