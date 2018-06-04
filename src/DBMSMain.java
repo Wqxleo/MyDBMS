@@ -85,7 +85,7 @@ public class DBMSMain {
 
                 //创建root用户
                 JSONObject root = new JSONObject();
-                root.put("type","root_uesr");
+                root.put("type","root_user");
                 root.put("root","root");
                 root.put("password","root");
 

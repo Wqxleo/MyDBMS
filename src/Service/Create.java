@@ -3,12 +3,13 @@ package Service;
 import Common.Error;
 import Common.Util;
 import Controller.*;
+import org.json.JSONException;
 
 /**
  * Created by wangquanxiu at 2018/5/27 20:24
  */
 public class Create {
-    public static void handleSql(String arrs[]){
+    public static void handleSql(String arrs[]) throws JSONException {
         if(arrs.length >= 3){
             switch (arrs[1]){
                 case "user":
