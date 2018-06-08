@@ -10,4 +10,7 @@ public class IndexController {
     public static void showIndex(String arrs[]){
 
     }
+    public static void helpIndex(String arrs[]){
+
+    }
 }

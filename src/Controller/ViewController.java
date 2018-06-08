@@ -83,6 +83,48 @@ public class ViewController {
 
     }
 
+    //
+    public static void helpView(String arrs[]){
+        sql = Util.arrayToString(arrs);
+        // 语法错误
+        if (arrs.length != 3) {
+            Util.showInTextArea(sql, Error.COMMAND_ERROR);
+            return;
+        }
+        // 检查是否选中数据库
+        if (Constant.currentDatabaseName == null) {
+            Util.showInTextArea(sql, Error.NO_DATABASE_SELECT);
+            return;
+        }
+        // 检查权限
+        if(!PermissionControl.checkChangeStructurePermission()) {
+            Util.showInTextArea(sql, Error.ACCESS_DENIED);
+            return;
+        }
+
+        try {
+            // 视图是否存在
+            if (!Constant.currentDatabase.getJSONObject("view").has(arrs[2])) {
+                Util.showInTextArea(sql, Error.VIEW_NOT_EXSIT + " ： " + arrs[2]);
+                return;
+            }
+            String content = Constant.currentDatabase.getJSONObject("view").getJSONObject(arrs[2]).getString("content") + "\n";
+            JSONArray natures = Constant.currentDatabase.getJSONObject("view").getJSONObject(arrs[2]).getJSONArray("items");
+            content += "nature\t\t" + "type\t\t" + "limit" + "\n";
+            for(int i = 0; i < natures.length(); i++){
+                JSONObject temp = natures.getJSONObject(i);
+                content += temp.getString("nature") + "\t\t" + temp.getString("type");
+                if(temp.has("limit")){
+                    content  += "\t\t" + temp.getString("limit");
+                }
+                content += "\n";
+            }
+            Util.showInTextArea(sql, "content" + " : " + content.substring(0, content.length() - 1));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 检查创建视图语法
      */

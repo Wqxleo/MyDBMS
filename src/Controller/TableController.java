@@ -33,10 +33,16 @@ public class TableController {
     public static boolean isLinkQuery = false;
     public static List<String[]> alldata = null;
     public static String linkNature = null;
+    public static String column = null;
+    public static String value = null;
+    public static int indexOfNature = -1;
     public static String subQuery = null;
     public static String natures2 = null;
     public static String setIdentify = null;
     public static String table2 = null;
+    public static String columnOfCondition = null;
+    public static String valueOfCondition = null;
+    public static int indexOfRecord = -1;
 
     //新建表
     public static void createTable(String arrs[]) throws JSONException {
@@ -274,6 +280,46 @@ public class TableController {
 
     }
 
+
+    //更新表
+    public static void updateTable(String arrs[]){
+        sql = Util.arrayToString(arrs);
+
+        //检查数据库是否选中
+        if(Constant.currentDatabase == null){
+            Util.showInTextArea(sql,Error.NO_DATABASE_SELECT);
+            return;
+        }
+
+        //检查用户权限
+        if(!PermissionControl.checkUpdatePermission()){
+            Util.showInTextArea(sql,Error.ACCESS_DENIED);
+            return;
+        }
+
+        //检查语句是否合法
+        if(!checkUpdateGram()){
+            Util.showInTextArea(sql,Error.COMMAND_ERROR);
+            return;
+        }
+        //检查表是不是存在
+        try {
+            if(!Constant.currentDatabase.getJSONObject("table").has(tableName)){
+                Util.showInTextArea(sql,Error.TABLE_NOT_EXIST);
+                return;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        if(condition == null){
+            updateWithoutCondition();
+        }else{
+            updateWithCondition();
+        }
+
+
+
+    }
     //展示所有表
     public static void  showTable(String arrs[]){
 
@@ -303,6 +349,46 @@ public class TableController {
         }
     }
 
+    //
+    public static void helpTable(String arrs[]){
+        sql = Util.arrayToString(arrs);
+        // 检查语法
+        if (arrs.length != 3) {
+            Util.showInTextArea(sql, Error.COMMAND_ERROR);
+            return;
+        }
+        // 是否选中数据库
+        if (Constant.currentDatabase == null) {
+            Util.showInTextArea(sql, Error.NO_DATABASE_SELECT);
+            return;
+        }
+        // 表是否存在
+        try {
+            if (!Constant.currentDatabase.getJSONObject("table").has(arrs[2])) {
+                Util.showInTextArea(sql, Error.TABLE_NOT_EXIST + " : " + arrs[2]);
+                return;
+            }
+            // 检查权限
+            if(!PermissionControl.checkChangeStructurePermission()) {
+                Util.showInTextArea(sql, Error.ACCESS_DENIED);
+                return;
+            }
+            JSONArray table = Constant.currentDatabase.getJSONObject("table").getJSONObject(arrs[2]).getJSONArray("items");
+            String content = arrs[2] + "\nnature\ttype\tlimit\n";
+            for (int i = 0; i < table.length(); i++) {
+                JSONObject temp = table.getJSONObject(i);
+                content += temp.getString("nature") + "\t";
+                content += temp.getString("type");
+                if (temp.has("limit")) {
+                    content += "\t" + temp.getString("limit");
+                }
+                content += "\n";
+            }
+            Util.showInTextArea(sql, content.substring(0, content.length() - 1));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
@@ -867,8 +953,189 @@ public class TableController {
         }
         return s1.length() - s2.length();
     }
+    /**
+     * 检查更新语法 并获取表名，更新条件，where条件
+     * @return
+     */
+    public static boolean checkUpdateGram() {
+        String match = "update ([a-z0-9_]+) set (.+) where (.+)";
+        pattern = Pattern.compile(match);
+        matcher = pattern.matcher(sql);
+        if(matcher.matches()) {
+            tableName = matcher.group(1).trim();
+            natures = matcher.group(2).trim();
+            condition = matcher.group(3).trim();
+            return true;
+        } else {
+            match = "update ([a-z0-9_]+) set (.+)";
+            pattern = Pattern.compile(match);
+            matcher = pattern.matcher(sql);
+            if(matcher.matches()) {
+                tableName = matcher.group(1).trim();
+                natures = matcher.group(2).trim();
+                return true;
+            }
+        }
+        return false;
+    }
 
 
+    /**
+     * 不带有where子句的update操作
+     */
+    public static void updateWithoutCondition() {
+        //以等号分割
+        String[] temp = natures.split("=");
+        //属性列
+        column = temp[0].trim();
+        value = temp[1].trim();
+        //检查列是否存在
+        if(!checkColumnExsit()) {
+            Util.showInTextArea(sql, Error.COLUMN_NOT_EXSIT);
+            return;
+        }
+
+        String tablePath = Constant.PATH_ROOT+"/"+Constant.currentDatabaseName+"/"+tableName+".sql";
+        String tableData = Util.readData(tablePath);
+        if(tableData == null || tableData == "" || tableData.matches("[\n\t]+")) { //表中没有数据，不进行更新
+            Util.showInTextArea(sql, Prompt.UPDATE_SUCCESS + " : 0 rows affected.");
+        } else {
+            //以换行符分割，按行处理
+            String[] recordArr = tableData.split("\r\n");
+            List<String[]> colValList = new LinkedList<String[]> ();
+            for(int i=0; i<recordArr.length; i++) {
+                //按属性之间的分隔符分割
+                String[] temp1 = recordArr[i].split(Constant.SPLIT);
+                temp1[indexOfNature - 1] = value;
+                colValList.add(temp1);
+            }
+            String resultTableData = "";
+            Iterator<String[]> iterator = colValList.iterator();
+            while(iterator.hasNext()) {
+                String[] temp2 = (String[])iterator.next();
+                for(int i=0; i<temp2.length; i++) {
+                    if(i == 0) {
+                        resultTableData += temp2[i];
+                    } else {
+                        resultTableData += Constant.SPLIT;
+                        resultTableData += temp2[i];
+                    }
+                }
+                resultTableData += "\r\n";
+            }
+            /*System.out.println(resultTableData);*/
+            Util.rewriteDataToTable(tablePath, resultTableData);
+            Util.showInTextArea(sql, Prompt.UPDATE_SUCCESS);
+        }
+    }
+
+    /**
+     * 带有where子句的update操作
+     */
+    public static void updateWithCondition() {
+        String[] temp = natures.split("=");
+        column = temp[0].trim();
+        value = temp[1].trim();
+        //检查列是否存在
+        if(!checkColumnExsit()) {
+            Util.showInTextArea(sql, Error.COLUMN_NOT_EXSIT + " ： " + column +" in " + tableName);
+            return;
+        }
+        try {
+            //找到要修改的列的下标
+            List<String> natureArr = new LinkedList<String> ();
+            JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName).getJSONArray("items");
+            for(int i=0; i<items.length(); i++) {
+                String temp1 = items.getJSONObject(i).getString("nature");
+                natureArr.add(temp1);
+            }
+            indexOfNature = 0;
+            Iterator<String> iterator = natureArr.iterator();
+            while(iterator.hasNext()) {
+                indexOfNature++;
+                String temp2 = (String)iterator.next();
+                if(temp2.equals(column)) {
+                    break;
+                }
+            }
+            //解析condition
+            String[] temp3 = condition.split("=");
+            columnOfCondition = temp3[0].trim();
+            valueOfCondition = temp3[1].trim();
+            //根据where的条件找到符合条件的记录的集合，形成一个数组
+            String tablePath = Constant.PATH_ROOT+"/"+Constant.currentDatabaseName+"/"+tableName+".sql";
+            String tableData = Util.readData(tablePath);
+            String[] temp4 = tableData.split("\r\n");
+            for(int i=0; i<temp4.length; i++) {
+                String[] temp5 = temp4[i].split(Constant.SPLIT);
+                for(int j=0; j<temp5.length; j++) {
+                    if(j+1 == indexOfNature) {
+                        indexOfRecord = i;
+                    }
+                }
+            }
+            //执行
+            for(int i=0; i<temp4.length; i++) {
+                if(i == indexOfRecord) {
+                    String[] temp5 = temp4[i].split(Constant.SPLIT);
+                    for(int j=0; j<temp5.length; j++) {
+                        if(j+1 == indexOfNature) {
+                            temp5[j] = value;
+                            break;
+                        }
+                    }
+                    temp4[i] = "";
+                    for(int j=0; j<temp5.length; j++) {
+                        if(j == 0) {
+                            temp4[i] += temp5[j];
+                        } else {
+                            temp4[i] += Constant.SPLIT + temp5[j];
+                        }
+                    }
+                }
+            }
+            String tableResult = "";
+            for(int i=0; i<temp4.length; i++) {
+                tableResult += temp4[i];
+                tableResult += "\r\n";
+            }
+            //将更新后的数据重新写入数据文件中
+            Util.rewriteDataToTable(tablePath, tableResult);
+            Util.showInTextArea(sql, Prompt.UPDATE_SUCCESS);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 检查列是否存在
+     * @return
+     */
+    public static boolean checkColumnExsit() {
+        try {
+            boolean columnExsit = false;
+            JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName).getJSONArray("items");
+            List<String> natureArr = new LinkedList<String> ();
+            for(int i=0; i<items.length(); i++) {
+                natureArr.add(items.getJSONObject(i).getString("nature"));
+            }
+            Iterator<String> iterator = natureArr.iterator();
+            int index = 0;
+            while(iterator.hasNext()) {
+                index++;
+                String tempNature = (String)iterator.next();
+                if(tempNature.equals(column)) {
+                    columnExsit = true;
+                    break;
+                }
+            }
+            indexOfNature = index;
+            return columnExsit;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
 
 }

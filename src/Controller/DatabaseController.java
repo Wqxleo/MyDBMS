@@ -14,10 +14,11 @@ import java.util.List;
  * Created by wangquanxiu at 2018/5/25 20:34
  */
 public class DatabaseController {
+    public static String sql = null;
 
     //创建数据库
     public static void createDb(String arrs[]) {
-        String sql = Util.arrayToString(arrs);
+        sql = Util.arrayToString(arrs);
         //检查命令的格式是否正确
         if(!arrs[2].matches("[a-z_][a-z0-9_]{0,99}") || arrs.length != 3){
             Util.showInTextArea(sql, Error.COMMAND_ERROR);
@@ -71,7 +72,7 @@ public class DatabaseController {
 
     //展示数据库
     public static void showDatabase(String arrs[]){
-        String sql = Util.arrayToString(arrs);
+        sql = Util.arrayToString(arrs);
 
         //检查用户权限
         if(!PermissionControl.checkChangeStructurePermission()){
@@ -94,5 +95,51 @@ public class DatabaseController {
         }
 
     }
+
+    /**
+     * 输出所有数据表、视图和索引的信息，同时显示其对象类型
+     */
+    public static void helpDatabase(String arrs[]){
+
+        // 检查是否选中数据库
+        if (Constant.currentDatabase == null) {
+            Util.showInTextArea(sql, Error.NO_DATABASE_SELECT);
+            return;
+        }
+        //检查权限
+        if(!PermissionControl.checkChangeStructurePermission()) {
+            Util.showInTextArea(sql, Error.ACCESS_DENIED);
+            return;
+        }
+
+        try {
+            String content;
+            Iterator<String> iterator = Constant.currentDatabase.getJSONObject("view").keys();
+            content = "all view : \n";
+            int total = 0;
+            while(iterator.hasNext()){
+                content += iterator.next().toString()+ "\n";
+                total++;
+            }
+            content += "total: " + total;
+
+            content += "all table: \n";
+            total = 0;
+            iterator = Constant.currentDatabase.getJSONObject("table").keys();
+            while(iterator.hasNext()){
+                content += iterator.next().toString() + "\n";
+                total++;
+            }
+
+            content += "total: "+ total;
+
+
+            Util.showInTextArea(sql,content);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
 }
