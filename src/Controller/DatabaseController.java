@@ -14,6 +14,8 @@ import java.util.List;
  * Created by wangquanxiu at 2018/5/25 20:34
  */
 public class DatabaseController {
+
+    //创建数据库
     public static void createDb(String arrs[]) {
         String sql = Util.arrayToString(arrs);
         //检查命令的格式是否正确
@@ -62,6 +64,32 @@ public class DatabaseController {
             }
             Util.showInTextArea(sql, Prompt.CREATE_DATABASE_SUCCESS);
         } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //展示数据库
+    public static void showDatabase(String arrs[]){
+        String sql = Util.arrayToString(arrs);
+
+        //检查用户权限
+        if(!PermissionControl.checkChangeStructurePermission()){
+            Util.showInTextArea(sql,Error.ACCESS_DENIED);
+            return;
+        }
+        try {
+            Iterator iterator = Constant.DICTIONARY.keys();
+            String dbStr = "";
+            int total = 0;
+            //迭代器的使用
+            while (iterator.hasNext()){
+                String key = (String)iterator.next();
+                dbStr += key+"\n";
+                total += 1;
+            }
+            Util.showInTextArea(sql,dbStr+"total : " + total);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

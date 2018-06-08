@@ -77,44 +77,6 @@ public class PreHandle {
             }
         }
     }
-  /*  //处理登录请求
-    public static void handleLogin() throws JSONException {
-        //检查语法是否正确
-        if(arr.length != 3) {
-            Util.showInTextArea(sql, Error.COMMAND_ERROR);
-            return;
-        }
-        //检查用户是否存在
-        if(!Constant.USERS.has(arr[1])) {
-            Util.showInTextArea(sql, Error.USER_NOT_EXIST);
-            return;
-        }
-        //检查密码是否正确
-        JSONObject user = Constant.USERS.getJSONObject(arr[1]);
-        if(!user.get("password").equals(arr[2])) {
-            Util.showInTextArea(sql, Error.PASSWORD_WRONG);
-            return;
-        }
-        //全部验证通过
-        Constant.currentUser = Constant.USERS.getJSONObject(arr[1]);
-        Constant.currentUserName = arr[1];
-        Constant.userType = Constant.currentUser.getString("type");
-        isLogin = true;
-        Util.showInTextArea(sql, Prompt.LOGIN_SUCCESS);
-    }
-    //处理退出请求
-    public static void handleExit() {
-        //检查语法是否正确
-        if(arr.length != 1) {
-            Util.showInTextArea(sql, Error.COMMAND_ERROR);
-            return;
-        }
-        isLogin = false;
-        Constant.currentUser = null;
-        Constant.currentDatabase = null;
-        Constant.currentUserName = null;
-        Constant.currentDatabaseName = null;
-        Util.showInTextArea(sql, Prompt.EXIT_SYSTEM);
-    }*/
+
 
 }
