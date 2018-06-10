@@ -6,6 +6,7 @@ package Controller;
 public class IndexController {
     public static void createIndex(String arrs[]){
 
+
     }
     public static void showIndex(String arrs[]){
 

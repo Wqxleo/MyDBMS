@@ -40,9 +40,13 @@ public class TableController {
     public static String natures2 = null;
     public static String setIdentify = null;
     public static String table2 = null;
+    public static JSONArray items = null;
     public static String columnOfCondition = null;
     public static String valueOfCondition = null;
     public static int indexOfRecord = -1;
+    public static int valuePositionInTable = 0;
+    public static int tableBeforeSize = 0;
+    public static int tableAfterSize = 0;
 
     //新建表
     public static void createTable(String arrs[]) throws JSONException {
@@ -220,9 +224,7 @@ public class TableController {
                 alldata = GetResultWithCheck.getAllResult(sql,tableName,view,condition,false,isview);
             }
         }
-        if(alldata == null){
-            return;
-        }
+
 
         // 获得最终的数据
         if (alldata == null) {
@@ -236,7 +238,6 @@ public class TableController {
                 return;
             }
         }
-        // 获得投影数据
         if (!natures.equals("*")) {
             if (!getResultWithNatures(natures)) {
                 return;
@@ -317,6 +318,49 @@ public class TableController {
             updateWithCondition();
         }
 
+
+
+    }
+
+
+    //删除表中的记录
+    public static void deleteInTable(String arrs[]) throws JSONException {
+        sql = Util.arrayToString(arrs);
+
+        //检查是否选中数据库
+        if(Constant.currentDatabase == null){
+            Util.showInTextArea(sql,Error.NO_DATABASE_SELECT);
+            return;
+        }
+
+        //检查语法是否正确
+        if(!checkDeleteGram()){
+            Util.showInTextArea(sql,Error.COMMAND_ERROR);
+            return;
+        }
+
+        //检查表或者视图是否存在
+        try {
+            if(!Constant.currentDatabase.getJSONObject("table").has(tableName)){
+                if(!Constant.currentDatabase.getJSONObject("view").has(tableName)){
+                    Util.showInTextArea(sql,Error.TABLE_NOT_EXIST);
+                    return;
+                }
+                else {
+                    isview = true;
+                    view = tableName;
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        //处理
+        if(condition == null){
+            deleteWithoutCondition();
+        }else {
+            deleteWithCondition();
+        }
 
 
     }
@@ -513,7 +557,6 @@ public class TableController {
             order_nature = matcher.group(3).trim();
             if(matcher.group(4) != null){
                 order = matcher.group(4).trim();
-
             }
             return  true;
         }
@@ -589,99 +632,7 @@ public class TableController {
      * @return
      */
     public static void linkQuery() { //select * from t1,t2 where t1.id=t2.id
-        String[] tableArr = tableName.split(",");
-        System.out.println(tableName);
-        String linkTable1 = tableArr[0].trim();
-        String linkTable2 = tableArr[1].trim();
-        //分离
-        String[] tableAndNature = condition.split("=");
-        String[] temp1 = tableAndNature[0].split("\\.");
-        String tableName1 = temp1[0].trim(); //t1
-        String tableNature1 = temp1[1].trim(); //id
-        String[] temp2 = tableAndNature[1].split("\\.");
-        String tableName2 = temp2[0].trim(); //t2
-        String tableNature2 = temp2[1].trim(); //id
-        if(!tableNature1.equals(tableNature2)) {
-            Util.showInTextArea(sql, Error.COMMAND_ERROR);
-            return;
-        }
-        //找到tableNature1和tableNature2在数据中的顺序下标
-        int tableNature1Index = 0; //表示第几个，从1开始
-        int tableNature2Index = 0; //表示第几个,从1开始
-        try {
-            JSONArray items1 = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName1).getJSONArray("items");
-            JSONArray items2 = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName2).getJSONArray("items");
-            for(int i=0; i<items1.length(); i++) {
-                tableNature1Index++;
-                String natureName = items1.getJSONObject(i).getString("nature");
-                if(natureName.equals(tableNature1)) {
-                    break;
-                }
-            }
-            for(int i=0; i<items2.length(); i++) {
-                tableNature2Index++;
-                String natureName = items2.getJSONObject(i).getString("nature");
-                if(natureName.equals(tableNature2)) {
-                    break;
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        //取数据
-        String linkTable1Path = Constant.PATH_ROOT+"/"+Constant.currentDatabaseName+"/"+linkTable1+".sql";
-        String linkTable2Path = Constant.PATH_ROOT+"/"+Constant.currentDatabaseName+"/"+linkTable2+".sql";
-        System.out.println(linkTable1);
-        String linkTable1Data = Util.readData(linkTable1Path);
-        String linkTable2Data = Util.readData(linkTable2Path);
-        String[] linkTable1DataRecordArr = linkTable1Data.split("\r\n");
-        String[] linkTable2DataRecordArr = linkTable2Data.split("\r\n");
-        List<String[]> table1List = new LinkedList<String[]>(); //表1中的数据
-        List<String[]> table2List = new LinkedList<String[]> (); //表2中的数据
-        String table1NatureValue = null;
-        for(int i=0; i<linkTable1DataRecordArr.length;i++) {
-            String[] temp = linkTable1DataRecordArr[i].split(Constant.SPLIT);
-            table1List.add(temp);
-        }
 
-        for(int i=0; i<linkTable2DataRecordArr.length;i++) {
-            String[] temp = linkTable2DataRecordArr[i].split(Constant.SPLIT);
-            table2List.add(temp);
-        }
-        List<String[]> newLinkedTable = new LinkedList<String[]> (); //连接后的新表
-        Iterator<String[]> iterator1 = table1List.iterator();
-        Iterator<String[]> iterator2 = table2List.iterator();
-        while(iterator1.hasNext()) {
-            String[] record1 = (String[])iterator1.next();
-            while(iterator2.hasNext()) {
-                String[] record2 = (String[])iterator2.next();
-                if(record1[tableNature1Index - 1].equals(record2[tableNature2Index - 1])) { //相等 这条数据可以连接
-                    String[] temp = Util.linkTwoStringArr(record1, record2, record1[tableNature1Index - 1]);
-                    for(String nmb : temp) {
-                        System.out.print(nmb + " ");
-                    }
-                    System.out.println();
-                    newLinkedTable.add(temp);
-                }
-            }
-        }
-        String head = "";
-        try {
-            JSONArray items1 = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName1).getJSONArray("items");
-            JSONArray items2 = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName2).getJSONArray("items");
-            for(int i=0; i<items1.length(); i++) {
-                head += items1.getJSONObject(i).getString("nature") + "\t\t";
-            }
-            for(int i=0; i<items2.length(); i++) {
-                if(!items1.getJSONObject(i).getString("nature").equals(tableNature1)) {
-                    head += items2.getJSONObject(i).getString("nature") + "\t\t";
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        String result = Util.parseListToOutput(newLinkedTable);
-        Util.showInTextArea(sql, head + "\n" + result + "total : " + newLinkedTable.size());
         return;
     }
 
@@ -990,7 +941,7 @@ public class TableController {
         column = temp[0].trim();
         value = temp[1].trim();
         //检查列是否存在
-        if(!checkColumnExsit()) {
+        if(!checkColumnExsitOfUpdate()) {
             Util.showInTextArea(sql, Error.COLUMN_NOT_EXSIT);
             return;
         }
@@ -1037,7 +988,7 @@ public class TableController {
         column = temp[0].trim();
         value = temp[1].trim();
         //检查列是否存在
-        if(!checkColumnExsit()) {
+        if(!checkColumnExsitOfUpdate()) {
             Util.showInTextArea(sql, Error.COLUMN_NOT_EXSIT + " ： " + column +" in " + tableName);
             return;
         }
@@ -1111,7 +1062,7 @@ public class TableController {
      * 检查列是否存在
      * @return
      */
-    public static boolean checkColumnExsit() {
+    public static boolean checkColumnExsitOfUpdate() {
         try {
             boolean columnExsit = false;
             JSONArray items = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName).getJSONArray("items");
@@ -1135,6 +1086,138 @@ public class TableController {
             e.printStackTrace();
         }
         return false;
+    }
+
+
+    public static boolean checkDeleteGram() {
+        String match = "delete from ([a-z0-9_]+) where (.+)";
+        pattern = Pattern.compile(match);
+        matcher = pattern.matcher(sql);
+        if(matcher.matches()) { //带where条件的delete
+            tableName = matcher.group(1);
+            condition = matcher.group(2);
+            return true;
+        } else { //不带where条件的delete
+            match = "delete from ([a-z0-9_]+)";
+            pattern = Pattern.compile(match);
+            matcher = pattern.matcher(sql);
+            if(matcher.matches()) {
+                tableName = matcher.group(1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 不带where限定，删除所有行
+     */
+    public static void deleteWithoutCondition() {
+        //先删除表文件再重新创建表文件，在数据字典中更新表的大小
+        Util.deleteFile(Constant.PATH_ROOT + "/" +Constant.currentDatabaseName, tableName + ".sql");
+        Util.createFile(Constant.PATH_ROOT + "/" + Constant.currentDatabaseName,tableName + ".sql" );
+        try {
+            Util.showInTextArea(sql, Prompt.DELETE_SUCCESS + ":" +Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName).getInt("size")+" rows deleted!");
+            Util.updateTableSize(tableName, 0);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 带有where限定，删除部分行
+     */
+    public static void deleteWithCondition() throws JSONException {
+        tableBeforeSize = 0;
+        //delete from 表名  where 列=值
+        String splitCondition[] = condition.split("=");
+        column = splitCondition[0].trim();
+        value = splitCondition[1].trim();
+        //判断列是否存在
+        if(!checkColumnExsitOfDelete()) {
+            Util.showInTextArea(sql,Error.COLUMN_NOT_EXSIT + " : " + column + " in " + tableName);
+            return;
+        }
+        //执行
+        //找到下标为value的，删除
+        String tableDataPath = Constant.PATH_ROOT + "/" + Constant.currentDatabaseName + "/" + tableName + ".sql";
+        String tableData = Util.readData(tableDataPath);
+        String[] tableDataArr = tableData.split("\r\n");
+        List<String[]> colValList = new LinkedList<String[]>();
+        for(String temp : tableDataArr) {
+            String[] tempArr = temp.split(Constant.SPLIT);
+            colValList.add(tempArr);
+        }
+        //找到 列=值的那条数据，删除
+        Iterator iterator = colValList.iterator();
+        while(iterator.hasNext()) {
+            String[] recordArr = (String[]) iterator.next();
+            if(recordArr[valuePositionInTable].equals(value)) {
+                iterator.remove();
+            }
+            tableBeforeSize++;
+        }
+        //将LinkedList转成StringListToString
+        String tableString = ListToString(colValList);
+        System.out.println(tableString);
+        //删除成功后，重新写入table文件中，覆盖写入
+        Util.rewriteDataToTable(Constant.PATH_ROOT+"/"+Constant.currentDatabaseName+"/"+tableName+".sql", tableString);
+        //更新表的大小
+        Util.updateTableSize(tableName, tableAfterSize);
+        System.out.println("before size: " + tableBeforeSize);
+        System.out.println("after size: "+ tableAfterSize);
+        Integer affecedSize = tableBeforeSize - tableAfterSize;
+        Util.showInTextArea(sql, Prompt.RECORD_DELETE_SUCCESS + " : " + affecedSize.toString() +" rows affected in table " +tableName);
+    }
+
+
+    /**
+     * 判断列是否存在（结构）
+     * @return
+     */
+    public static boolean checkColumnExsitOfDelete() {
+        try {
+            boolean isColumnExsit = false;
+            valuePositionInTable = 0;
+            items = Constant.currentDatabase.getJSONObject("table").getJSONObject(tableName).getJSONArray("items");
+            for(int i=0;i < items.length();i++) {
+                valuePositionInTable++;
+                if(items.getJSONObject(i).getString("nature").equals(column)) {
+                    isColumnExsit = true;
+                    break;
+                }
+            }
+            if(isColumnExsit == false) {
+                valuePositionInTable = 0;
+            }
+            return isColumnExsit;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    /**
+     * 链表转成table存储格式的String
+     * @param colValList
+     * @return
+     */
+    public static String ListToString(List<String[]> colValList) {
+        tableAfterSize = 0;
+        String str = "";
+        Iterator iterator = colValList.iterator();
+        while(iterator.hasNext()) {
+            String[] recordArr = (String[]) iterator.next();
+            for(int i=0;i<recordArr.length;i++) {
+                if(i==0) {
+                    str += recordArr[i];
+                } else {
+                    str += Constant.SPLIT + recordArr[i];
+                }
+            }
+            str += "\r\n";
+            tableAfterSize++;
+        }
+        return str;
     }
 
 
