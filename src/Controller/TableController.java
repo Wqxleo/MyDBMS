@@ -393,7 +393,7 @@ public class TableController {
         }
     }
 
-    //
+    //help table
     public static void helpTable(String arrs[]){
         sql = Util.arrayToString(arrs);
         // 检查语法

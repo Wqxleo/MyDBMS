@@ -79,11 +79,13 @@ public class ViewController {
 
 
     }
+
+
     public static void showView(String arrs[]){
 
     }
 
-    //
+    //help view
     public static void helpView(String arrs[]){
         sql = Util.arrayToString(arrs);
         // 语法错误
